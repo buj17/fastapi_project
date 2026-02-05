@@ -1,38 +1,23 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 import fastapi
 from fastapi import FastAPI
-from pydantic import PositiveInt
+from pydantic import BaseModel, Field, ConfigDict
 
 app = FastAPI()
 
 
-@app.get('/items/{item_id}')
-async def items(
-        item_id: Annotated[
-            PositiveInt,
-            fastapi.Path(
-                title='The ID of the item to get',
-                ge=1,
-            )
-        ],
-        size: Annotated[
-            float,
-            fastapi.Query(
-                gt=0,
-                lt=10.5,
-            )
-        ],
-        q: Annotated[
-            str | None,
-            fastapi.Query(alias='item-query'),
-        ] = None,
+class FilterParams(BaseModel):
+    limit: int = Field(100, gt=0, le=100)
+    offset: int = Field(0, ge=0)
+    order_by: Literal['created_at', 'updated_at'] = 'created_at'
+    tags: list[str] = []
 
-):
-    results: dict[str, ...] = {'item_id': item_id}
-    if q:
-        results['q'] = q
+    model_config = ConfigDict(
+        extra='forbid',
+    )
 
-    results['size'] = size
 
-    return results
+@app.get('/items/')
+async def read_items(filter_query: Annotated[FilterParams, fastapi.Query()]):
+    return filter_query

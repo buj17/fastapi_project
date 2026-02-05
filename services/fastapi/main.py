@@ -1,29 +1,38 @@
-import re
-from typing import Annotated, Pattern
+from typing import Annotated
 
+import fastapi
 from fastapi import FastAPI
-from fastapi.params import Query
+from pydantic import PositiveInt
 
 app = FastAPI()
 
-pattern: Pattern[str] | str = re.compile(r'^fixedquery$')
 
-
-@app.get('/items/')
-async def read_items(
+@app.get('/items/{item_id}')
+async def items(
+        item_id: Annotated[
+            PositiveInt,
+            fastapi.Path(
+                title='The ID of the item to get',
+                ge=1,
+            )
+        ],
+        size: Annotated[
+            float,
+            fastapi.Query(
+                gt=0,
+                lt=10.5,
+            )
+        ],
         q: Annotated[
             str | None,
-            Query(
-                alias='item-query',
-                title='Query string',
-                description='Query string for the items to search in the database that have a good match',
-                min_length=3,
-                pattern=pattern,
-            ),
+            fastapi.Query(alias='item-query'),
         ] = None,
+
 ):
-    results: dict[str, ...] = {'items': [{'item_id': 'Foo'}, {'item_id': 'Bar'}]}
+    results: dict[str, ...] = {'item_id': item_id}
     if q:
         results['q'] = q
+
+    results['size'] = size
 
     return results

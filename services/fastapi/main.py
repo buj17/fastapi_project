@@ -1,23 +1,43 @@
-from typing import Annotated, Literal
+from typing import Annotated
 
 import fastapi
 from fastapi import FastAPI
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel
 
 app = FastAPI()
 
 
-class FilterParams(BaseModel):
-    limit: int = Field(100, gt=0, le=100)
-    offset: int = Field(0, ge=0)
-    order_by: Literal['created_at', 'updated_at'] = 'created_at'
-    tags: list[str] = []
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
 
 
-@app.get('/items/')
-async def read_items(filter_query: Annotated[FilterParams, fastapi.Query()]):
-    return filter_query
+class User(BaseModel):
+    username: str
+    full_name: str | None = None
+
+
+@app.put('/items/{item_id}')
+async def update_item(
+        item_id: Annotated[
+            int,
+            fastapi.Path(
+                title='The ID of the item to get',
+                ge=0,
+                le=1000,
+            ),
+        ],
+        item: Item,
+        user: User,
+):
+    results: dict[str, ...] = {'item_id': item_id}
+
+    if item:
+        results['item'] = item
+
+    if user:
+        results['user'] = user
+
+    return results

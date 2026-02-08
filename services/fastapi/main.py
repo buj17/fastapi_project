@@ -2,42 +2,43 @@ from typing import Annotated
 
 import fastapi
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    Field,
+)
 
 app = FastAPI()
 
 
-class Item(BaseModel):
-    name: str
-    description: str | None = None
-    price: float
+class Item(
+    BaseModel,
+):
+    name: str = Field(
+        max_length=200,
+    )
+    description: str | None = Field(
+        default=None,
+        title='Item description',
+        max_length=300,
+    )
+    price: float = Field(
+        gt=0,
+        description='The price must be grater than zero',
+    )
     tax: float | None = None
 
 
-class User(BaseModel):
-    username: str
-    full_name: str | None = None
-
-
-@app.put('/items/{item_id}')
+@app.put(
+    '/items/{item_id}',
+)
 async def update_item(
-        item_id: Annotated[
-            int,
-            fastapi.Path(
-                title='The ID of the item to get',
-                ge=0,
-                le=1000,
-            ),
-        ],
-        item: Item,
-        user: User,
+    item_id: int,
+    item: Annotated[
+        Item,
+        fastapi.Body(
+            embed=True,
+        ),
+    ],
 ):
-    results: dict[str, ...] = {'item_id': item_id}
-
-    if item:
-        results['item'] = item
-
-    if user:
-        results['user'] = user
-
+    results = {'item_id': item_id, 'item': item}
     return results
